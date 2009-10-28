@@ -37,6 +37,7 @@ import logging
 import ConfigParser
 from distutils.util import strtobool
 from distutils import sysconfig
+import xmlrpclib
 
 class InstallationError(Exception):
     """General exception during installation"""
@@ -1177,6 +1178,43 @@ class UnzipCommand(ZipCommand):
     summary = 'Unzip individual packages'
 
 UnzipCommand()
+
+class SearchCommand(Command):
+    name = 'search'
+    usage = '%prog search QUERY'
+    summary = 'Search PyPI'
+
+    def run(self, options, args):
+
+        # search name and summary
+        query = args[0]
+        pypi = xmlrpclib.ServerProxy('http://python.org/pypi')
+        name_hits = pypi.search({'name': query})
+        summary_hits = pypi.search({'summary': query})
+
+        # merge hits
+        hits = dict([(hit['name'], hit) for hit in name_hits])
+        hits.update(dict([(hit['name'], hit) for hit in summary_hits]))
+
+        installed_packages = [p.project_name for p in pkg_resources.working_set]
+
+        name_column_width = 25
+
+        for (name, hit) in hits.iteritems():
+            name = hit['name']
+            installed = name in installed_packages
+            if hit['summary'] is None:
+                summary = ''
+            else:
+                summary = hit['summary']
+            line = '%s %s - %s' % (
+                'i' if installed else 'n',
+                name.ljust(name_column_width)[:name_column_width],
+                summary
+            )
+            print line
+
+SearchCommand()
 
 
 def main(initial_args=None):
