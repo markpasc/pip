@@ -1181,7 +1181,7 @@ UnzipCommand()
 
 class SearchCommand(Command):
     name = 'search'
-    usage = '%prog search QUERY'
+    usage = '%prog QUERY'
     summary = 'Search PyPI'
 
     def run(self, options, args):
