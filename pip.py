@@ -1184,30 +1184,95 @@ class SearchCommand(Command):
     usage = '%prog QUERY'
     summary = 'Search PyPI'
 
+    def __init__(self):
+        super(SearchCommand, self).__init__()
+        self.parser.add_option(
+            '-r', '--reindex',
+            dest='reindex',
+            action='store_true',
+            help='Re-index local search cache.')
+        self.parser.add_option(
+            '-d', '--direct',
+            dest='direct',
+            action='store_true',
+            help='Search PyPI directly instead local cache.')
+
     def run(self, options, args):
+        if options.reindex:
+            action = self.reindex
+        else:
+            action = self.search
+        action(options, args)
 
-        # search name and summary
+    def search(self, options, args):
+        if not args:
+            print 'ERROR: Missing required search argument.'
+            return
         query = args[0]
+
+        if options.direct:
+            hits = self.direct_search(query)
+        else:
+            hits = self.local_search(query)
+
+        self._print_results(hits)
+
+    def direct_search(self, query):
         pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
-        hits = pypi.search({'name': query, 'summary': query}, 'or')
+        pypi_hits = pypi.search({'name': query, 'summary': query}, 'or')
 
+        # remove duplicates
+        seen_names = []
+        hits = []
+        for hit in pypi_hits:
+            if hit['name'] not in seen_names:
+                seen_names.append(hit['name'])
+                hits.append(hit)
+        return hits
+
+    def local_search(self, query):
+        if not os.path.exists(self._index_file()):
+            print 'ERROR: Search index does not exist. Run "pip search --reindex" to correct this.'
+            return []
+        hits = []
+        with open(self._index_file(), 'r') as index:
+            for line in index.readlines():
+                if query.lower() in line.lower():
+                    # decode and remove line break
+                    data = line.decode('utf-8')[:-1]
+                    bits = data.split('|', 1)
+                    pkg = {
+                        'name': bits[0],
+                        'summary': bits[1].replace('<br/>', '\n'),
+                    }
+                    hits.append(pkg)
+        return hits
+
+    def _print_results(self, hits, name_column_width=25):
         installed_packages = [p.project_name for p in pkg_resources.working_set]
-
-        name_column_width = 25
-
         for hit in hits:
             name = hit['name']
+            summary = hit['summary']
             installed = name in installed_packages
-            if hit['summary'] is None:
-                summary = ''
-            else:
-                summary = hit['summary']
             line = '%s %s - %s' % (
                 'i' if installed else 'n',
-                name.ljust(name_column_width)[:name_column_width],
-                summary
+                name.ljust(name_column_width),
+                summary.replace('\n', '\n' + ' ' * (name_column_width + 5))
             )
             print line
+
+    def _index_file(self):
+        return os.path.join(os.getenv('HOME'), '.pip-search-index')
+
+    def reindex(self, options, args):
+        pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+        pkgs = pypi.search({})
+        index = open(self._index_file(), 'w')
+        for pkg in pkgs:
+            index.write((
+                pkg['name'] + '|' +
+                (pkg['summary'] if pkg['summary'] is not None else '')
+            ).encode('utf-8').replace('\n', '<br/>') + '\n')
 
 SearchCommand()
 
