@@ -1188,19 +1188,14 @@ class SearchCommand(Command):
 
         # search name and summary
         query = args[0]
-        pypi = xmlrpclib.ServerProxy('http://python.org/pypi')
-        name_hits = pypi.search({'name': query})
-        summary_hits = pypi.search({'summary': query})
-
-        # merge hits
-        hits = dict([(hit['name'], hit) for hit in name_hits])
-        hits.update(dict([(hit['name'], hit) for hit in summary_hits]))
+        pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+        hits = pypi.search({'name': query, 'summary': query}, 'or')
 
         installed_packages = [p.project_name for p in pkg_resources.working_set]
 
         name_column_width = 25
 
-        for (name, hit) in hits.iteritems():
+        for hit in hits:
             name = hit['name']
             installed = name in installed_packages
             if hit['summary'] is None:
