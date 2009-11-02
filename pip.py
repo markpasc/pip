@@ -1267,12 +1267,12 @@ class SearchCommand(Command):
     def reindex(self, options, args):
         pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
         pkgs = pypi.search({})
-        index = open(self._index_file(), 'w')
-        for pkg in pkgs:
-            index.write((
-                pkg['name'] + '|' +
-                (pkg['summary'] if pkg['summary'] is not None else '')
-            ).encode('utf-8').replace('\n', '<br/>') + '\n')
+        with open(self._index_file(), 'w') as index:
+            for pkg in pkgs:
+                index.write((
+                    pkg['name'] + '|' +
+                    (pkg['summary'] if pkg['summary'] is not None else '')
+                ).encode('utf-8').replace('\n', '<br/>') + '\n')
 
 SearchCommand()
 
