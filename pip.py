@@ -1235,17 +1235,18 @@ class SearchCommand(Command):
             print 'ERROR: Search index does not exist. Run "pip search --reindex" to correct this.'
             return []
         hits = []
-        with open(self._index_file(), 'r') as index:
-            for line in index.readlines():
-                if query.lower() in line.lower():
-                    # decode and remove line break
-                    data = line.decode('utf-8')[:-1]
-                    bits = data.split('|', 1)
-                    pkg = {
-                        'name': bits[0],
-                        'summary': bits[1].replace('<br/>', '\n'),
-                    }
-                    hits.append(pkg)
+        index = open(self._index_file(), 'r')
+        for line in index.readlines():
+            if query.lower() in line.lower():
+                # decode and remove line break
+                data = line.decode('utf-8')[:-1]
+                bits = data.split('|', 1)
+                pkg = {
+                    'name': bits[0],
+                    'summary': bits[1].replace('<br/>', '\n'),
+                }
+                hits.append(pkg)
+        index.close()
         return hits
 
     def _print_results(self, hits, name_column_width=25):
@@ -1254,8 +1255,12 @@ class SearchCommand(Command):
             name = hit['name']
             summary = hit['summary']
             installed = name in installed_packages
+            if installed:
+                flag = 'i'
+            else:
+                flag = 'n'
             line = '%s %s - %s' % (
-                'i' if installed else 'n',
+                flag,
                 name.ljust(name_column_width),
                 summary.replace('\n', '\n' + ' ' * (name_column_width + 5))
             )
@@ -1267,12 +1272,16 @@ class SearchCommand(Command):
     def reindex(self, options, args):
         pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
         pkgs = pypi.search({})
-        with open(self._index_file(), 'w') as index:
-            for pkg in pkgs:
-                index.write((
-                    pkg['name'] + '|' +
-                    (pkg['summary'] if pkg['summary'] is not None else '')
-                ).encode('utf-8').replace('\n', '<br/>') + '\n')
+        index = open(self._index_file(), 'w')
+        for pkg in pkgs:
+            if pkg['summary'] is not None:
+                summary = pkg['summary']
+            else:
+                summary = ''
+            index.write((
+                pkg['name'] + '|' + summary
+            ).encode('utf-8').replace('\n', '<br/>') + '\n')
+        index.close()
 
 SearchCommand()
 
