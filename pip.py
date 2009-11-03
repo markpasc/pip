@@ -38,6 +38,7 @@ import ConfigParser
 from distutils.util import strtobool
 from distutils import sysconfig
 import xmlrpclib
+import shelve
 
 class InstallationError(Exception):
     """General exception during installation"""
@@ -1238,18 +1239,14 @@ class SearchCommand(Command):
             print >> sys.stderr, 'NOTICE: Search index is more than 30 days old. Run "pip search --reindex" to update it.'
 
         hits = []
-        index = open(self._index_file(), 'r')
-        for line in index.readlines():
-            if query.lower() in line.lower():
-                # decode and remove line break
-                data = line.decode('utf-8')[:-1]
-                bits = data.split('|', 1)
-                pkg = {
-                    'name': bits[0],
-                    'summary': bits[1].replace('<br/>', '\n'),
-                }
-                hits.append(pkg)
-        index.close()
+        query = query.lower()
+        db = shelve.open(self._index_file())
+        pkgs = db['search-index']
+        hits = [pkg for pkg in pkgs
+                if query in pkg['name'].lower()
+                or (pkg['summary'] is not None
+                    and query in pkg['summary'].lower())]
+        db.close()
         return hits
 
     def _print_results(self, hits, name_column_width=25):
@@ -1277,24 +1274,14 @@ class SearchCommand(Command):
         pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
         pkgs = pypi.search({})
         index_file = self._index_file()
-        currently_indexed = []
+        db = shelve.open(index_file)
+        currently_indexed = [pkg['name'] for pkg in db.get('search-index', [])]
         new_pkg_count = 0
-        if os.path.exists(index_file):
-            index = open(index_file, 'r')
-            for line in index.readlines():
-                currently_indexed.append(line.decode('utf-8').split('|', 1)[0])
-        index = open(index_file, 'w')
         for pkg in pkgs:
             if pkg['name'] not in currently_indexed:
                 new_pkg_count += 1
-            if pkg['summary'] is not None:
-                summary = pkg['summary']
-            else:
-                summary = ''
-            index.write((
-                pkg['name'] + '|' + summary
-            ).encode('utf-8').replace('\n', '<br/>') + '\n')
-        index.close()
+        db['search-index'] = pkgs
+        db.close()
         print '%s new packages indexed successfully in "%s"' % (new_pkg_count, index_file)
 
 SearchCommand()
