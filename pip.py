@@ -1206,7 +1206,7 @@ class SearchCommand(Command):
 
     def search(self, options, args):
         if not args:
-            print 'ERROR: Missing required search argument.'
+            print >> sys.stderr, 'ERROR: Missing required search argument.'
             return
         query = args[0]
 
@@ -1232,8 +1232,11 @@ class SearchCommand(Command):
 
     def local_search(self, query):
         if not os.path.exists(self._index_file()):
-            print 'ERROR: Search index does not exist. Run "pip search --reindex" to correct this.'
+            print >> sys.stderr, 'ERROR: Search index does not exist. Run "pip search --reindex" to correct this.'
             return []
+        if os.path.getmtime(self._index_file()) < time.time() - 2592000:
+            print >> sys.stderr, 'NOTICE: Your search index file is more than 30 days old. Run "pip search --reindex" to correct this.'
+
         hits = []
         index = open(self._index_file(), 'r')
         for line in index.readlines():
@@ -1270,10 +1273,20 @@ class SearchCommand(Command):
         return os.path.join(os.getenv('HOME'), '.pip-search-index')
 
     def reindex(self, options, args):
+        print 'Please wait as package information is downloaded...'
         pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
         pkgs = pypi.search({})
-        index = open(self._index_file(), 'w')
+        index_file = self._index_file()
+        currently_indexed = []
+        new_pkg_count = 0
+        if os.path.exists(index_file):
+            index = open(index_file, 'r')
+            for line in index.readlines():
+                currently_indexed.append(line.decode('utf-8').split('|', 1)[0])
+        index = open(index_file, 'w')
         for pkg in pkgs:
+            if pkg['name'] not in currently_indexed:
+                new_pkg_count += 1
             if pkg['summary'] is not None:
                 summary = pkg['summary']
             else:
@@ -1282,6 +1295,7 @@ class SearchCommand(Command):
                 pkg['name'] + '|' + summary
             ).encode('utf-8').replace('\n', '<br/>') + '\n')
         index.close()
+        print '%s new packages indexed successfully in "%s"' % (new_pkg_count, index_file)
 
 SearchCommand()
 
