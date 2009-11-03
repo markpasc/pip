@@ -1232,10 +1232,10 @@ class SearchCommand(Command):
 
     def local_search(self, query):
         if not os.path.exists(self._index_file()):
-            print >> sys.stderr, 'ERROR: Search index does not exist. Run "pip search --reindex" to correct this.'
+            print >> sys.stderr, 'ERROR: Search index does not exist. Run "pip search --reindex" to create it.'
             return []
         if os.path.getmtime(self._index_file()) < time.time() - 2592000:
-            print >> sys.stderr, 'NOTICE: Your search index file is more than 30 days old. Run "pip search --reindex" to correct this.'
+            print >> sys.stderr, 'NOTICE: Search index is more than 30 days old. Run "pip search --reindex" to update it.'
 
         hits = []
         index = open(self._index_file(), 'r')
