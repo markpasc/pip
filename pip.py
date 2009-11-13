@@ -1300,6 +1300,7 @@ class SearchCommand(Command):
             if pkg['name'] not in currently_indexed:
                 new_pkg_count += 1
         db['search-index'] = pkgs
+        db['version'] = 1
         db.close()
         print '%s new packages indexed successfully in "%s"' % (new_pkg_count, index_file)
 
