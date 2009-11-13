@@ -1278,7 +1278,7 @@ class SearchCommand(Command):
         return os.path.join(os.getenv('HOME'), '.pip-search-index')
 
     def reindex(self, options, args):
-        print 'Please wait as package information is downloaded...'
+        print 'Downloading and updating local search index...'
         pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
         pkgs = pypi.search({})
         index_file = self._index_file()
