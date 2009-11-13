@@ -39,6 +39,7 @@ from distutils.util import strtobool
 from distutils import sysconfig
 import xmlrpclib
 import shelve
+import textwrap
 
 class InstallationError(Exception):
     """General exception during installation"""
@@ -1259,9 +1260,12 @@ class SearchCommand(Command):
 
     def _print_results(self, hits, name_column_width=25):
         installed_packages = [p.project_name for p in pkg_resources.working_set]
+        terminal_size = get_terminal_size()
+        terminal_width = terminal_size[0]
         for hit in hits:
             name = hit['name']
-            summary = hit['summary']
+            summary = hit['summary'] or ''
+            summary = textwrap.wrap(summary, terminal_width - name_column_width - 5)
             installed = name in installed_packages
             if installed:
                 flag = 'i'
@@ -1270,7 +1274,7 @@ class SearchCommand(Command):
             line = '%s %s - %s' % (
                 flag,
                 name.ljust(name_column_width),
-                summary.replace('\n', '\n' + ' ' * (name_column_width + 5))
+                ('\n' + ' ' * (name_column_width + 5)).join(summary),
             )
             print line
 
@@ -4736,6 +4740,32 @@ def strip_prefix(path, prefix):
         if path.startswith(prefix):
             return prefix, path.replace(prefix + os.path.sep, '')
     return None, None
+
+def get_terminal_size():
+    """Returns a tuple (x, y) representing the width(x) and the height(x)
+    in characters of the terminal window."""
+    def ioctl_GWINSZ(fd):
+        try:
+            import fcntl, termios, struct
+            cr = struct.unpack('hh', fcntl.ioctl(fd, termios.TIOCGWINSZ,
+        '1234'))
+        except:
+            return None
+        return cr
+    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
+    if not cr:
+        try:
+            fd = os.open(os.ctermid(), os.O_RDONLY)
+            cr = ioctl_GWINSZ(fd)
+            os.close(fd)
+        except:
+            pass
+    if not cr:
+        try:
+            cr = (env['LINES'], env['COLUMNS'])
+        except:
+            cr = (25, 80)
+    return int(cr[1]), int(cr[0])
 
 class UninstallPathSet(object):
     """A set of file paths to be removed in the uninstallation of a
