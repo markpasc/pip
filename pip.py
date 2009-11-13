@@ -1275,13 +1275,20 @@ class SearchCommand(Command):
             print line
 
     def _index_file(self):
-        return os.path.join(os.getenv('HOME'), '.pip-search-index')
+        if sys.platform == 'win32':
+            config_dir = os.environ.get('APPDATA', user_dir) # Use %APPDATA% for roaming
+            index_file = os.path.join(config_dir, 'pip', 'search.db')
+        else:
+            index_file = os.path.join(user_dir, '.pip', 'index.db')
+        return index_file
 
     def reindex(self, options, args):
         print 'Downloading and updating local search index...'
         pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
         pkgs = pypi.search({})
         index_file = self._index_file()
+        if not os.path.exists(os.path.dirname(index_file)):
+            os.makedirs(os.path.dirname(index_file))
         db = shelve.open(index_file)
         currently_indexed = [pkg['name'] for pkg in db.get('search-index', [])]
         new_pkg_count = 0
