@@ -1216,7 +1216,7 @@ class SearchCommand(Command):
 
     def search(self, options, args):
         if not args:
-            print >> sys.stderr, 'ERROR: Missing required search argument.'
+            print >> sys.stderr, 'ERROR: Missing required argument (search query).'
             return
         query = args[0]
 
