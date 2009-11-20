@@ -1233,7 +1233,7 @@ class InfoCommand(Command):
         req = pkg_resources.Requirement.parse(dist)
         logger.debug('Requirement for %r is %r', dist, req)
 
-        releases = server.package_releases(dist)
+        releases = server.package_releases(req.project_name)
         logger.debug('Checking if %r are in %r', releases, req)
         good_releases = [r for r in releases if r in req]
         if not good_releases:
