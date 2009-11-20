@@ -1259,7 +1259,6 @@ class InfoCommand(Command):
     def show_release_data(self, data):
         lines = list()
         lines.append("%(name)s %(version)s - %(summary)s")
-        lines.append("")
 
         if data['author'] and data['author_email']:
             lines.append("Author: %(author)s <%(author_email)s>")
@@ -1273,7 +1272,6 @@ class InfoCommand(Command):
         if data['home_page']:
             lines.append("Home page: %(home_page)s")
         lines.append("License: %(license)s")
-        lines.append("")
 
         # These are lists, so stringify them here.
         if data['provides']:
@@ -1284,7 +1282,6 @@ class InfoCommand(Command):
             lines.append("Obsoletes: %s" % ', '.join(data['obsoletes']))
 
         if data['_pip_other_versions']:
-            lines.append("")
             lines.append("Other versions: %s" % ', '.join(data['_pip_other_versions']))
 
         for line in lines:
