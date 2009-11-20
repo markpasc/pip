@@ -1273,19 +1273,18 @@ class InfoCommand(Command):
             lines.append("Home page: %(home_page)s")
         lines.append("License: %(license)s")
 
-        # These are lists, so stringify them here.
-        if data['provides']:
-            lines.append("Provides: %s" % ', '.join(data['provides']))
-        if data['requires']:
-            lines.append("Requires: %s" % ', '.join(data['requires']))
-        if data['obsoletes']:
-            lines.append("Obsoletes: %s" % ', '.join(data['obsoletes']))
-
-        if data['_pip_other_versions']:
-            lines.append("Other versions: %s" % ', '.join(data['_pip_other_versions']))
-
         for line in lines:
             print line % data
+
+        # These are lists, so print them directly.
+        if data['provides']:
+            print "Provides: %s" % ', '.join(data['provides'])
+        if data['requires']:
+            print "Requires: %s" % ', '.join(data['requires'])
+        if data['obsoletes']:
+            print "Obsoletes: %s" % ', '.join(data['obsoletes'])
+        if data['_pip_other_versions']:
+            print "Other versions: %s" % ', '.join(data['_pip_other_versions'])
 
 InfoCommand()
 
