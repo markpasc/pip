@@ -1244,12 +1244,16 @@ class InfoCommand(Command):
         raw_ver_for_parsed_ver = dict((pkg_resources.parse_version(r), r)
             for r in good_releases)
         parsed_versions = sorted(raw_ver_for_parsed_ver.keys())
-        best_version = parsed_versions[-1]
+        best_version = parsed_versions.pop(-1)
         logger.debug('Best of %r is %r', parsed_versions, best_version)
 
         best_raw_version = raw_ver_for_parsed_ver[best_version]
         logger.debug('Yay, asking for %r %r', req.project_name, best_raw_version)
         release = server.release_data(req.project_name, best_raw_version)
+
+        release['_pip_other_versions'] = [v for v in releases if v != best_raw_version]
+        logger.debug('Other versions are %r', release['_pip_other_versions'])
+
         return release
 
     def show_release_data(self, data):
@@ -1278,6 +1282,10 @@ class InfoCommand(Command):
             lines.append("Requires: %s" % ', '.join(data['requires']))
         if data['obsoletes']:
             lines.append("Obsoletes: %s" % ', '.join(data['obsoletes']))
+
+        if data['_pip_other_versions']:
+            lines.append("")
+            lines.append("Other versions: %s" % ', '.join(data['_pip_other_versions']))
 
         for line in lines:
             print line % data
