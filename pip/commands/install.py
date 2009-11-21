@@ -1,8 +1,10 @@
 import os
-import pip
+from pip.req import InstallRequirement, RequirementSet
+from pip.req import parse_requirements
 from pip.log import logger
 from pip.locations import build_prefix, src_prefix
 from pip.basecommand import Command
+from pip.index import PackageFinder
 
 class InstallCommand(Command):
     name = 'install'
@@ -130,10 +132,10 @@ class InstallCommand(Command):
         if options.no_index:
             logger.notify('Ignoring indexes: %s' % ','.join(index_urls))
             index_urls = []
-        finder = pip.PackageFinder(
+        finder = PackageFinder(
             find_links=options.find_links,
             index_urls=index_urls)
-        requirement_set = pip.RequirementSet(
+        requirement_set = RequirementSet(
             build_dir=options.build_dir,
             src_dir=options.src_dir,
             download_dir=options.download_dir,
@@ -143,12 +145,12 @@ class InstallCommand(Command):
             ignore_dependencies=options.ignore_dependencies)
         for name in args:
             requirement_set.add_requirement(
-                pip.InstallRequirement.from_line(name, None))
+                InstallRequirement.from_line(name, None))
         for name in options.editables:
             requirement_set.add_requirement(
-                pip.InstallRequirement.from_editable(name, default_vcs=options.default_vcs))
+                InstallRequirement.from_editable(name, default_vcs=options.default_vcs))
         for filename in options.requirements:
-            for req in pip.parse_requirements(filename, finder=finder, options=options):
+            for req in parse_requirements(filename, finder=finder, options=options):
                 requirement_set.add_requirement(req)
         requirement_set.install_files(finder, force_root_egg_info=self.bundle)
         if not options.no_install and not self.bundle:
