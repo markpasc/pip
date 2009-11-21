@@ -1213,18 +1213,27 @@ class InfoCommand(Command):
 
         release_data = dict()
 
-        for index_url in indexes:
-            for dist in args:
-                try:
-                    release_data[dist] = self.release_in_index(dist, index_url)
-                except DistributionNotFound:
-                    pass
-
+        first_dist = True
         for dist in args:
+            if first_dist:
+                first_dist = False
+            else:
+                print
+
             try:
-                self.show_release_data(release_data[dist])
-            except KeyError:
+                release = self.release_in_indexes(dist, indexes)
+            except DistributionNotFound:
                 print "Found no such release %r" % dist
+            else:
+                self.show_release_data(release)
+
+    def release_in_indexes(self, dist, indexes):
+        for index_url in indexes:
+            try:
+                return self.release_in_index(dist, index_url)
+            except DistributionNotFound:
+                pass
+        raise DistributionNotFound()
 
     def release_in_index(self, dist, index_url):
         import xmlrpclib
