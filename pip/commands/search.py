@@ -8,6 +8,7 @@ import pkg_resources
 from pip.basecommand import Command
 from pip.locations import default_config_dir
 from pip.util import get_terminal_size
+from pip.exceptions import SearchIndexDoesNotExist
 
 class SearchCommand(Command):
     name = 'search'
@@ -43,7 +44,10 @@ class SearchCommand(Command):
         if options.direct:
             hits = self.direct_search(query)
         else:
-            hits = self.local_search(query)
+            try:
+                hits = self.local_search(query)
+            except SearchIndexDoesNotExist:
+                return
 
         self._print_results(hits)
 
@@ -63,7 +67,7 @@ class SearchCommand(Command):
     def local_search(self, query):
         if not os.path.exists(self._index_file()):
             print >> sys.stderr, 'ERROR: Search index does not exist. Run "pip search --reindex" to create it.'
-            return []
+            raise SearchIndexDoesNotExist
         if os.path.getmtime(self._index_file()) < time.time() - 2592000:
             print >> sys.stderr, 'NOTICE: Search index is more than 30 days old. Run "pip search --reindex" to update it.'
 
