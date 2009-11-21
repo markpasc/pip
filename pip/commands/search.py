@@ -6,7 +6,7 @@ import textwrap
 import time
 import pkg_resources
 from pip.basecommand import Command
-from pip.locations import user_dir
+from pip.locations import default_config_dir
 from pip.util import get_terminal_size
 
 class SearchCommand(Command):
@@ -99,12 +99,7 @@ class SearchCommand(Command):
             print line
 
     def _index_file(self):
-        if sys.platform == 'win32':
-            config_dir = os.environ.get('APPDATA', user_dir) # Use %APPDATA% for roaming
-            index_file = os.path.join(config_dir, 'pip', 'search.db')
-        else:
-            index_file = os.path.join(user_dir, '.pip', 'index.db')
-        return index_file
+        return os.path.join(default_config_dir, 'index.db')
 
     def reindex(self, options, args):
         print 'Downloading and updating local search index...'
