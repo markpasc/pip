@@ -18,15 +18,21 @@ class SearchCommand(Command):
     def __init__(self):
         super(SearchCommand, self).__init__()
         self.parser.add_option(
-            '-r', '--reindex',
+            '--reindex',
             dest='reindex',
             action='store_true',
             help='Re-index local search cache.')
         self.parser.add_option(
-            '-d', '--direct',
+            '--direct',
             dest='direct',
             action='store_true',
             help='Search PyPI directly instead local cache.')
+        self.parser.add_option(
+            '--index',
+            dest='index',
+            metavar='URL',
+            default='http://pypi.python.org/pypi',
+            help='Base URL of Python Package Index (default %default)')
 
     def run(self, options, args):
         if options.reindex:
@@ -40,9 +46,10 @@ class SearchCommand(Command):
             print >> sys.stderr, 'ERROR: Missing required argument (search query).'
             return
         query = args[0]
+        index_url = options.index
 
         if options.direct:
-            hits = self.direct_search(query)
+            hits = self.direct_search(query, index_url)
         else:
             try:
                 hits = self.local_search(query)
@@ -51,8 +58,8 @@ class SearchCommand(Command):
 
         self._print_results(hits)
 
-    def direct_search(self, query):
-        pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+    def direct_search(self, query, index_url):
+        pypi = xmlrpclib.ServerProxy(index_url)
         pypi_hits = pypi.search({'name': query, 'summary': query}, 'or')
 
         # remove duplicates
@@ -106,8 +113,9 @@ class SearchCommand(Command):
         return os.path.join(default_config_dir, 'index.db')
 
     def reindex(self, options, args):
+        index_url = options.index
         print 'Downloading and updating local search index...'
-        pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+        pypi = xmlrpclib.ServerProxy(index_url)
         pkgs = pypi.search({})
         index_file = self._index_file()
         if not os.path.exists(os.path.dirname(index_file)):
