@@ -86,28 +86,29 @@ class InfoCommand(Command):
         lines = list()
         lines.append("%(name)s %(version)s - %(summary)s")
 
-        if data['author'] and data['author_email']:
+        if data.get('author') and data.get('author_email'):
             lines.append("Author: %(author)s <%(author_email)s>")
-        elif data['author']:
+        elif data.get('author'):
             lines.append("Author: %(author)s")
-        if data['maintainer'] and data['maintainer_email']:
+        if data.get('maintainer') and data.get('maintainer_email'):
             lines.append("Maintainer: %(maintainer)s <%(maintainer_email)s>")
-        elif data['maintainer']:
+        elif data.get('maintainer'):
             lines.append("Maintainer: %(maintainer)s")
 
-        if data['home_page']:
+        if data.get('home_page'):
             lines.append("Home page: %(home_page)s")
-        lines.append("License: %(license)s")
+        if data.get('license') and data.get('license') != 'UNKNOWN':
+            lines.append("License: %(license)s")
 
         for line in lines:
             print line % data
 
         # These are lists, so print them directly.
-        if data['provides']:
+        if data.get('provides'):
             print "Provides: %s" % ', '.join(data['provides'])
-        if data['requires']:
+        if data.get('requires'):
             print "Requires: %s" % ', '.join(data['requires'])
-        if data['obsoletes']:
+        if data.get('obsoletes'):
             print "Obsoletes: %s" % ', '.join(data['obsoletes'])
         if show_index:
             print "Found in index: %s" % data['_pip_index_url']
