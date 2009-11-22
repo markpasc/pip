@@ -64,23 +64,18 @@ class InfoCommand(Command):
 
         releases = server.package_releases(req.project_name)
         logger.debug('Checking if %r are in %r', releases, req)
-        good_releases = [r for r in releases if r in req]
+        good_releases = sorted((r for r in releases if r in req),
+            key=pkg_resources.parse_version)
         if not good_releases:
             logger.debug('Oops, none of %r are in %r', releases, req)
             raise DistributionNotFound()
 
         logger.debug('Yay, %r are in %r', good_releases, req)
-        raw_ver_for_parsed_ver = dict((pkg_resources.parse_version(r), r)
-            for r in good_releases)
-        parsed_versions = sorted(raw_ver_for_parsed_ver.keys())
-        best_version = parsed_versions.pop(-1)
-        logger.debug('Best of %r is %r', parsed_versions, best_version)
+        best_release = good_releases.pop(-1)
+        logger.debug('Yay, asking for %r %r', req.project_name, best_release)
+        release = server.release_data(req.project_name, best_release)
 
-        best_raw_version = raw_ver_for_parsed_ver[best_version]
-        logger.debug('Yay, asking for %r %r', req.project_name, best_raw_version)
-        release = server.release_data(req.project_name, best_raw_version)
-
-        release['_pip_other_versions'] = [v for v in releases if v != best_raw_version]
+        release['_pip_other_versions'] = [r for r in releases if r != best_release]
         logger.debug('Other versions are %r', release['_pip_other_versions'])
 
         return release
