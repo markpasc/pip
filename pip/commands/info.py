@@ -45,7 +45,8 @@ class InfoCommand(Command):
             except DistributionNotFound:
                 print "Found no such release %r" % dist
             else:
-                self.show_release_data(release)
+                self.show_release_data(release,
+                    show_index=bool(options.extra_index_urls))
 
     def release_in_indexes(self, dist, indexes):
         for index_url in indexes:
@@ -75,12 +76,13 @@ class InfoCommand(Command):
         logger.debug('Yay, asking for %r %r', req.project_name, best_release)
         release = server.release_data(req.project_name, best_release)
 
+        release['_pip_index_url'] = index_url
         release['_pip_other_versions'] = [r for r in releases if r != best_release]
         logger.debug('Other versions are %r', release['_pip_other_versions'])
 
         return release
 
-    def show_release_data(self, data):
+    def show_release_data(self, data, show_index=False):
         lines = list()
         lines.append("%(name)s %(version)s - %(summary)s")
 
@@ -107,6 +109,8 @@ class InfoCommand(Command):
             print "Requires: %s" % ', '.join(data['requires'])
         if data['obsoletes']:
             print "Obsoletes: %s" % ', '.join(data['obsoletes'])
+        if show_index:
+            print "Found in index: %s" % data['_pip_index_url']
         if data['_pip_other_versions']:
             print "Other versions: %s" % ', '.join(data['_pip_other_versions'])
 
